@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title >Transaction DashBoard</title>
+    <style>
+        h2{
+            text-align: center;
+            border:1px solid black;
+            border-radius: 10px;
+            margin: 0 10px 1rem 10px;
+            
+            padding: 10px 20px;
+            border: 2px solid #000;
+            border-radius: 10px;
+        }
+        .search-container{
+            display: flex;/* Aligns child divs horizontally */
+            justify-content: center; /* Centers the divs horizontally */
+            align-items: center; /* Centers the divs vertically if needed */
+            margin: 0 20px 0 20px;
+            padding: 20px;
+            
+        }
+        .search-bar{
+            margin: 20px auto;
+            padding: 0 20px 0 20px ;
+            margin-left: 12rem;
+            
+        }
+        .search-bar input
+        {
+            align-items: center;
+            padding: 10px;
+            width: 200px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+        }
+        .dropdown{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 5px ;
+            width: 200px;
+            
+            margin-right: 12.5rem;
+        }
+        select{
+            padding: 10px;
+            width: 180px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+            font-size: 16px;
+            color: #333;
+            appearance: none;
+        }
+        table {
+            align-items: center;
+            width: 80%;
+            max-width: 1000px;
+            border-collapse: collapse;
+            margin: 0 auto;
+            margin-bottom: 100px;
+            
+        }
+
+        table, th, td {
+            border: 1px solid black;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        img {
+            width: 50px;
+            height: 50px;
+        }
+        .pagination{
+            display: flex;
+            justify-content: center;
+            margin: 20px auto;
+        }
+        .pagination button {
+            margin: 0 5px;
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            cursor: pointer;
+        }
+        .pagination button:hover {
+            background-color: #ddd;
+        }
+        
+    </style>
+</head>
+<body>
+    <h2>Transaction DashBoard</h2>
+    <div class="search-container">
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="serach transaction..."/>
+            
+        </div>
+        <div class="dropdown">
+            <select id="monthSelect">
+                <option value="" disabled selected>Select Month</option>
+                <option value="january">January</option>
+                <option value="february">February</option>
+                <option value="march" >March</option> <!-- Default selected -->
+                <option value="april">April</option>
+                <option value="may">May</option>
+                <option value="june">June</option>
+                <option value="july">July</option>
+                <option value="august">August</option>
+                <option value="september">September</option>
+                <option value="october">October</option>
+                <option value="november">November</option>
+                <option value="december">December</option>
+            </select>
+        </div>
+    </div>
+    
+    <table id="transactionTable">
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Category</th>
+                <th>Image</th>
+                <th>Sold</th>
+                <th>Date</th>
+                
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <% for(let i = 0; i < allTransactions.length; i++) { %>
+                <tr>
+                    <td><%= (currentPage - 1) * 10 + i + 1 %></td>
+                    <td><a href="/transaction/<%= allTransactions[i]._id %>"><%= allTransactions[i].title %></a></td>
+                    <td><%= allTransactions[i].description %></td>
+                    <td>$<%= allTransactions[i].price.toFixed(2) %></td>
+                    <td><%= allTransactions[i].category  %></td>
+                    <td><img src="<%= allTransactions[i].image %>" alt="Product Image"></td>
+                    <td><%= allTransactions[i].sold ? 'Yes' : 'No' %></td> <!-- Display 'Yes' or 'No' for sold status -->
+                    <td><%= allTransactions[i].dateOfSold ? new Date(allTransactions[i].dateOfSold).toDateString('en-US') : 'N/A' %></td> <!-- Display date or 'N/A' -->
+                </tr>
+            <% } %>
+            
+        </tbody>
+        </table>
+        
+           
+      <div class="pagination">
+        <% if(currentPage >1){%>
+            <button onclick="fetchTransactions('<%=currentPage-1%>')">Previous</button>
+        <% } %>
+        <% for(let i=1;i<=totalPages;i++){%>
+            <button onclick="fetchTransactions('<%= i %>')"><%= i %></button>
+        <% } %>
+        <% if(currentPage<totalPages){%>
+            <button onclick="fetchTransactions('<%=currentPage+1%>')">Next</button>
+        <% } %>
+      </div>
+        
+      
+      <div id="statistics">
+        <p id="totalSaleAmount"></p>
+        <p id="totalSoldItems"></p>
+        <p id="totalNotSoldItems"></p>
+    </div>
+</body>
+</html>
+
+<script>
+
+document.getElementById('searchInput').addEventListener('input', () => fetchTransactions(1));
+document.getElementById('monthSelect').addEventListener('change', () => fetchTransactions(1));
+async function fetchTransactions(page) {
+    const search = document.getElementById('searchInput').value;
+    const month = document.getElementById('monthSelect').value; // if you're using month filter
+
+    const response = await fetch(`/transaction?page=${page}&search=${search}&month=${month}`, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json'
+        }
+    });
+
+    if (response.ok) {
+        const data = await response.json();
+        updateTable(data.transactions);
+        updatePagination(data.currentPage, data.totalPages);
+    } else {
+        console.error('Error fetching transactions:', response.statusText);
+    }
+}
+
+function updateTable(transactions) {
+    const tableBody = document.getElementById('tableBody');
+    tableBody.innerHTML = ''; // Clear existing rows
+
+    transactions.forEach((transaction,index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><a href="/transaction/${transaction._id}">${transaction._id}</a></td>
+            <td>${transaction.title}</td>
+            <td>${transaction.description}</td>
+            <td>$${transaction.price.toFixed(2)}</td>
+            <td>${transaction.category}</td>
+            <td><img src="${transaction.image}" alt="Product Image"></td>
+            <td>${transaction.sold?'Yes':'No'}</td>
+        <td>${transaction.dateOfSale ? new Date(transaction.dateOfSale).toLocaleDateString('en-US') : 'N/A'}</td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+function updatePagination(currentPage, totalPages) {
+    const paginationDiv = document.querySelector('.pagination');
+    paginationDiv.innerHTML = ''; // Clear existing buttons
+
+    if (currentPage > 1) {
+        const prevButton = document.createElement('button');
+        prevButton.innerText = 'Previous';
+        prevButton.onclick = () => fetchTransactions(currentPage - 1);
+        paginationDiv.appendChild(prevButton);
+    }
+
+    for (let i = 1; i <= totalPages; i++) {
+        const button = document.createElement('button');
+        button.innerText = i;
+        button.onclick = () => fetchTransactions(i);
+        if (i === currentPage) {
+            button.disabled = true; // Disable the current page button
+        }
+        paginationDiv.appendChild(button);
+    }
+
+    if (currentPage < totalPages) {
+        const nextButton = document.createElement('button');
+        nextButton.innerText = 'Next';
+        nextButton.onclick = () => fetchTransactions(currentPage + 1);
+        paginationDiv.appendChild(nextButton);
+    }
+}
+</script>
+
+
